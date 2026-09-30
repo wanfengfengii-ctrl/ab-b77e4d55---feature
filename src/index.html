@@ -47,6 +47,29 @@
   <section id="result" class="result empty" aria-label="复原结果">
     <p class="hint">填写三组片段后点击“复原图谱”。</p>
   </section>
+
+  <section id="design" class="design hidden" aria-label="鉴别实验设计">
+    <h2>鉴别实验设计</h2>
+    <p class="lead small">
+      复原得到多个非反向等价图谱后，可录入 <strong>2~5 种候选验证酶</strong>
+      及其从<strong>已标记左端</strong>量取的内部切点（1 与总长度−1 之间的整数，逗号或空格分隔），
+      发起鉴别实验设计。系统将完整枚举预算内全部非反向图谱、把每个等价类展开为
+      正向 / 反向两种定向假设，并选择数量最少的一组双酶切实验区分全部假设；
+      并列时按候选酶录入顺序、酶A 优先于酶B 裁决。未发起前，上方原输入、结论与见证保持不变。
+    </p>
+    <div id="enzymeRows" class="enzyme-rows"></div>
+    <div class="actions">
+      <button id="addEnzyme" type="button" class="secondary">＋ 增加候选酶</button>
+      <button id="removeEnzyme" type="button" class="secondary">－ 移除末种</button>
+      <button id="designBtn" type="button">设计鉴别实验</button>
+      <span class="examples">
+        候选酶示例（配合上方“多解见证”输入）：
+        <button type="button" class="link" data-enzymes="distinguishable">可鉴别</button>
+        <button type="button" class="link" data-enzymes="indistinguishable">不可鉴别</button>
+      </span>
+    </div>
+    <div id="designResult" class="design-result"></div>
+  </section>
 </main>
 <script src="solver.js"></script>
 <script src="app.js"></script>

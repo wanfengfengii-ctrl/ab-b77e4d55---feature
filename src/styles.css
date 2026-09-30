@@ -122,3 +122,52 @@ table.cuts th, table.cuts td {
 }
 .merge h3 { font-size: 0.95rem; margin: 12px 0 4px; }
 .merge ul { margin: 4px 0; padding-left: 20px; color: #334155; line-height: 1.8; }
+
+/* ---------- 鉴别实验设计 ---------- */
+.hidden { display: none; }
+.lead.small { font-size: 0.88rem; }
+.design {
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 16px;
+  margin-top: 24px;
+}
+.design h2 { font-size: 1.15rem; margin: 0 0 8px; }
+.enzyme-rows { display: grid; gap: 8px; margin: 12px 0; }
+.enzyme-row { display: grid; grid-template-columns: minmax(140px, 220px) 1fr; gap: 8px; }
+.enzyme-row input {
+  padding: 8px 10px;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  font-size: 0.95rem;
+}
+button.secondary {
+  background: #e2e8f0;
+  color: #0f172a;
+  padding: 8px 14px;
+  font-size: 0.9rem;
+}
+button.secondary:hover { background: #cbd5e1; }
+.design-result { margin-top: 14px; }
+.design-msg.error { color: var(--err); font-weight: 600; }
+.design-summary { color: #334155; background: #f1f5f9; border-radius: 8px; padding: 8px 12px; }
+.design-ok h3 { color: var(--ok); font-size: 0.98rem; margin: 10px 0 6px; }
+.design-bad h3 { color: var(--err); font-size: 0.98rem; margin: 10px 0 6px; }
+.small { font-size: 0.85rem; }
+.muted { color: #64748b; }
+table.evidence, table.predtable { border-collapse: collapse; margin: 8px 0 12px; }
+table.evidence th, table.evidence td, table.predtable th, table.predtable td {
+  border: 1px solid #e2e8f0;
+  padding: 4px 12px;
+  font-size: 0.88rem;
+  text-align: left;
+}
+td.same { color: var(--err); font-weight: 600; }
+td.diff { color: var(--ok); font-weight: 600; }
+.predictions { margin-top: 12px; }
+.predictions summary { cursor: pointer; color: var(--a); font-weight: 600; }
+.predictions h4 { font-size: 0.92rem; margin: 12px 0 4px; }
+@media (max-width: 560px) {
+  .enzyme-row { grid-template-columns: 1fr; }
+}

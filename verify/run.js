@@ -2,8 +2,9 @@
  * verify 一次性服务编排器：依次执行
  *   1. 代码测试（node --test）
  *   2. 静态构建（scripts/build.js）
- *   3. 三种业务结论（verify/business.js）
- *   4. 网页 HTTP 冒烟（verify/smoke.js）
+ *   3. 五种业务结论（verify/business.js：唯一/多解/不可行/可鉴别/不可鉴别）
+ *   4. 页面交互冒烟（verify/dom-smoke.js：DOM 事件链路）
+ *   5. 网页 HTTP 冒烟（verify/smoke.js）
  * 全部完成后自行退出，退出码 0 表示全部通过，非 0 表示存在失败步骤。
  */
 'use strict';
@@ -15,7 +16,8 @@ const appRoot = path.join(__dirname, '..');
 const steps = [
   ['代码测试', ['--test']],
   ['静态构建', ['scripts/build.js']],
-  ['三种业务结论', ['verify/business.js']],
+  ['五种业务结论', ['verify/business.js']],
+  ['页面交互冒烟', ['verify/dom-smoke.js']],
   ['网页 HTTP 冒烟', ['verify/smoke.js']]
 ];
 
@@ -36,5 +38,5 @@ if (failed) {
   console.error(`VERIFY FAILED：${failed} 个步骤未通过`);
   process.exit(1);
 }
-console.log('VERIFY OK：代码测试、构建、三种业务结论、HTTP 冒烟全部通过');
+console.log('VERIFY OK：代码测试、构建、五种业务结论、页面交互冒烟、HTTP 冒烟全部通过');
 process.exit(0);
