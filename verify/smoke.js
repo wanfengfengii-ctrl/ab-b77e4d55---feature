@@ -5,8 +5,13 @@ const base = (process.env.WEB_URL || 'http://web:80').replace(/\/+$/, '');
 
 const checks = [
   ['/', (res, body) => res.status === 200 && body.includes('限制性内切酶图谱复原')],
-  ['/solver.js', (res, body) => res.status === 200 && body.includes('DigestSolver')],
-  ['/app.js', (res, body) => res.status === 200 && body.includes('DigestSolver')],
+  ['/', (res, body) => res.status === 200 && body.includes('id="probePanel"') &&
+    body.includes('设计鉴别实验') && body.includes('data-probe-example="distinguishable"') &&
+    body.includes('data-probe-example="indistinguishable"')],
+  ['/solver.js', (res, body) => res.status === 200 && body.includes('DigestSolver') &&
+    body.includes('designExperiment')],
+  ['/app.js', (res, body) => res.status === 200 && body.includes('DigestSolver') &&
+    body.includes('designExperiment')],
   ['/styles.css', (res, body) => res.status === 200 && body.includes('.track')],
   ['/healthz', (res, body) => res.status === 200 && body.trim() === 'ok']
 ];

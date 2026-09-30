@@ -1,5 +1,6 @@
-/* 页面交互：读取输入 → 调用 DigestSolver.solve → 渲染结论。
- * 修改任一草稿（四个输入框）立即清除旧结论。 */
+/* 页面交互：读取输入 → 调用 DigestSolver.solve → 渲染结论；
+ * 多解后可录入候选验证酶发起 DigestSolver.designExperiment。
+ * 修改任一草稿（四个输入框或候选验证酶）立即清除旧结论 / 旧方案。 */
 (function () {
   'use strict';
 
@@ -9,7 +10,8 @@
     double: '双酶切（联合）',
     D: '双酶切',
     total: '总长度',
-    input: '输入'
+    input: '输入',
+    probe: '候选验证酶'
   };
   var SITE_LABEL = { A: '酶A', B: '酶B', AB: '酶A+酶B' };
 
@@ -28,13 +30,19 @@
   var statusEl = document.getElementById('status');
   var resultEl = document.getElementById('result');
 
+  /* 最近一次复原：保存原始输入与结论，供“设计鉴别实验”复用。
+   * 未成功复原为多解时为 null，此时发起设计不会改变原输入与见证。 */
+  var lastSolve = null;
+
   /* 修改任一草稿后必须清除旧结论 */
   function clearOutput() {
+    lastSolve = null;
     statusEl.textContent = '';
     statusEl.className = 'status';
     resultEl.className = 'result empty';
     resultEl.textContent = '';
     resultEl.appendChild(el('p', 'hint', '输入已修改，旧结论已清除，请重新点击“复原图谱”。'));
+    clearDesign();
   }
   [totalInput, fragA, fragB, fragD].forEach(function (input) {
     input.addEventListener('input', clearOutput);
@@ -66,17 +74,21 @@
     if (pD.error) parseIssues.push({ group: 'D', message: pD.error });
 
     var res;
+    var raw = null;
     if (parseIssues.length) {
       res = { status: 'invalid', issues: parseIssues };
     } else {
-      res = DigestSolver.solve({
+      raw = {
         total: Number(totalInput.value),
         A: pA.values,
         B: pB.values,
         D: pD.values
-      });
+      };
+      res = DigestSolver.solve(raw);
     }
+    lastSolve = res.status === 'multiple' ? { raw: raw, result: res } : null;
     render(res);
+    clearDesign();
   });
 
   function render(res) {
@@ -216,4 +228,261 @@
     box.appendChild(ul);
     return box;
   }
+
+  /* ---------- 鉴别实验设计 ---------- */
+
+  var probeRowsEl = document.getElementById('probeRows');
+  var addProbeBtn = document.getElementById('addProbe');
+  var removeProbeBtn = document.getElementById('removeProbe');
+  var designBtn = document.getElementById('design');
+  var designStatusEl = document.getElementById('designStatus');
+  var designResultEl = document.getElementById('designResult');
+
+  var DEFAULT_PROBE_COUNT = 2;
+
+  function probeInputs() {
+    return Array.prototype.map.call(probeRowsEl.querySelectorAll('.probe-row'), function (row) {
+      return { name: row.querySelector('.probe-name'), cuts: row.querySelector('.probe-cuts') };
+    });
+  }
+
+  function addProbeRow(name, cuts) {
+    var row = el('div', 'probe-row');
+    var no = probeRowsEl.children.length + 1;
+    var nameInput = document.createElement('input');
+    nameInput.type = 'text';
+    nameInput.className = 'probe-name';
+    nameInput.placeholder = '验证酶' + no;
+    nameInput.value = name || '';
+    nameInput.autocomplete = 'off';
+    var cutsInput = document.createElement('input');
+    cutsInput.type = 'text';
+    cutsInput.className = 'probe-cuts';
+    cutsInput.placeholder = '内部切点，例如 1, 5';
+    cutsInput.value = cuts || '';
+    cutsInput.autocomplete = 'off';
+    row.appendChild(el('span', 'probe-label', '候选酶 ' + no + '：名称'));
+    row.appendChild(nameInput);
+    row.appendChild(el('span', 'probe-label', '从左端量取的切点'));
+    row.appendChild(cutsInput);
+    probeRowsEl.appendChild(row);
+  }
+
+  function renumberProbeRows() {
+    Array.prototype.forEach.call(probeRowsEl.querySelectorAll('.probe-row'), function (row, i) {
+      row.querySelector('.probe-label').textContent = '候选酶 ' + (i + 1) + '：名称';
+    });
+  }
+
+  for (var pi = 0; pi < DEFAULT_PROBE_COUNT; pi++) addProbeRow();
+
+  /* 修改候选验证酶（含增删行）立即清除旧方案，但不动原复原结论与见证 */
+  function clearDesign() {
+    designStatusEl.textContent = '';
+    designStatusEl.className = 'status';
+    designResultEl.className = 'result empty';
+    designResultEl.textContent = '';
+    designResultEl.appendChild(el('p', 'hint',
+      lastSolve
+        ? '当前为多解结论：录入 2–5 种候选验证酶后点击“设计鉴别实验”。'
+        : '仅在复原结论为“存在多个非反向等价图谱”后可发起；未发起时原输入、结论与见证保持不变。'));
+  }
+
+  probeRowsEl.addEventListener('input', function (e) {
+    if (e.target.classList.contains('probe-name') || e.target.classList.contains('probe-cuts')) {
+      clearDesign();
+    }
+  });
+
+  addProbeBtn.addEventListener('click', function () {
+    if (probeRowsEl.children.length >= DigestSolver.MAX_PROBE_ENZYMES) return;
+    addProbeRow();
+    clearDesign();
+  });
+  removeProbeBtn.addEventListener('click', function () {
+    if (probeRowsEl.children.length <= DigestSolver.MIN_PROBE_ENZYMES) return;
+    probeRowsEl.removeChild(probeRowsEl.lastElementChild);
+    renumberProbeRows();
+    clearDesign();
+  });
+
+  var PROBE_EXAMPLES = {
+    distinguishable: [
+      { name: '验证酶1', cuts: '1' },
+      { name: '验证酶2', cuts: '6' }
+    ],
+    indistinguishable: [
+      { name: '验证酶1', cuts: '3' },
+      { name: '验证酶2', cuts: '4' }
+    ]
+  };
+  Array.prototype.forEach.call(document.querySelectorAll('[data-probe-example]'), function (btn) {
+    btn.addEventListener('click', function () {
+      // 探针示例配套多解见证场景：先把原消化数据设为多解示例并复原
+      var ex = EXAMPLES.multiple;
+      totalInput.value = ex.total;
+      fragA.value = ex.A;
+      fragB.value = ex.B;
+      fragD.value = ex.D;
+      var pA = DigestSolver.parseFragments(fragA.value);
+      var pD = DigestSolver.parseFragments(fragD.value);
+      var raw = { total: Number(totalInput.value), A: pA.values, B: DigestSolver.parseFragments(fragB.value).values, D: pD.values };
+      var res = DigestSolver.solve(raw);
+      lastSolve = res.status === 'multiple' ? { raw: raw, result: res } : null;
+      render(res);
+
+      var spec = PROBE_EXAMPLES[btn.getAttribute('data-probe-example')];
+      probeRowsEl.textContent = '';
+      spec.forEach(function (p) { addProbeRow(p.name, p.cuts); });
+      clearDesign();
+    });
+  });
+
+  designBtn.addEventListener('click', function () {
+    if (!lastSolve) {
+      designStatusEl.textContent = '✗ 请先点击“复原图谱”并得到多解结论，再发起鉴别实验设计';
+      designStatusEl.className = 'status error';
+      designResultEl.className = 'result empty';
+      designResultEl.textContent = '';
+      designResultEl.appendChild(el('p', 'hint', '原输入、结论与见证保持不变。'));
+      return;
+    }
+    var issues = [];
+    var probes = [];
+    probeInputs().forEach(function (inp, i) {
+      var parsed = DigestSolver.parseFragments(inp.cuts.value);
+      if (parsed.error) {
+        issues.push({ group: 'probe', message: '候选验证酶 ' + (i + 1) + '：' + parsed.error });
+        return;
+      }
+      probes.push({ name: inp.name.value.trim(), cuts: parsed.values });
+    });
+    if (issues.length) {
+      renderDesign({ status: 'invalid', issues: issues });
+      return;
+    }
+    renderDesign(DigestSolver.designExperiment(lastSolve.raw, probes));
+  });
+
+  function orientationText(h) {
+    return '假设 ' + h.id + '（等价类 ' + h.classIndex + ' 的' +
+      (h.orientation === '+' ? '正向' : '反向') + '定向' +
+      (h.selfReverse ? '，该类自反向，两种定向重合' : '') + '）';
+  }
+
+  function hypothesisBrief(h) {
+    var parts = [];
+    h.map.fragments.forEach(function (f, i) {
+      if (i > 0) parts.push('—' + h.map.sites[i - 1] + '@' + h.map.cuts[i - 1] + '—');
+      parts.push(String(f));
+    });
+    return parts.join('');
+  }
+
+  function renderDesign(res) {
+    designResultEl.className = 'result';
+    designResultEl.textContent = '';
+
+    if (res.status === 'invalid') {
+      designStatusEl.textContent = '✗ 候选验证酶录入有误';
+      designStatusEl.className = 'status error';
+      var ul = el('ul', 'issues');
+      res.issues.forEach(function (issue) {
+        ul.appendChild(el('li', null, (GROUP_LABEL[issue.group] || issue.group) + '：' + issue.message));
+      });
+      designResultEl.appendChild(ul);
+      return;
+    }
+
+    if (res.status === 'aborted') {
+      designStatusEl.textContent = '✗ 枚举规模超出预算';
+      designStatusEl.className = 'status error';
+      designResultEl.appendChild(el('p', null, res.message));
+      return;
+    }
+
+    // 假设一览（始终展示，便于核对预测）
+    var summary = el('div', 'design-summary');
+    var classCount = (function () {
+      var cs = {};
+      res.hypotheses.forEach(function (h) { cs[h.classIndex] = true; });
+      return Object.keys(cs).length;
+    })();
+    summary.appendChild(el('p', null,
+      '预算内共枚举到 ' + classCount + ' 个非反向等价图谱，展开为 ' +
+      res.hypotheses.length + ' 种定向假设：'));
+    var hypUl = el('ul', 'hyp-list');
+    res.hypotheses.forEach(function (h) {
+      hypUl.appendChild(el('li', null, orientationText(h) + '：' + hypothesisBrief(h)));
+    });
+    summary.appendChild(hypUl);
+    designResultEl.appendChild(summary);
+
+    if (res.status === 'distinguishable') {
+      designStatusEl.textContent = '✓ 已选出数量最少的鉴别实验集（共 ' +
+        res.selected.length + ' 项，覆盖 ' + res.pairCount + ' 对定向假设）';
+      designStatusEl.className = 'status ok';
+      var intro = el('p', null,
+        '下列任意一项实验的预测片段多重集一旦与实测不符，即可排除对应定向假设；' +
+        '全部 ' + res.pairCount + ' 对定向假设至少被其中一项实验区分。' +
+        '并列时已按候选酶录入顺序、酶A优先于酶B稳定裁决。');
+      designResultEl.appendChild(intro);
+      res.selected.forEach(function (sel) {
+        designResultEl.appendChild(renderPredictionTable(sel, res));
+      });
+      return;
+    }
+
+    /* indistinguishable */
+    designStatusEl.textContent = '✗ 全部候选实验仍无法区分部分定向假设';
+    designStatusEl.className = 'status error';
+    var pair = res.indistinguishablePair;
+    var h1 = res.hypotheses.filter(function (h) { return h.id === pair.first; })[0];
+    var h2 = res.hypotheses.filter(function (h) { return h.id === pair.second; })[0];
+    designResultEl.appendChild(el('p', 'failure',
+      '预测始终相同的一对定向假设：' + orientationText(h1) + ' 与 ' + orientationText(h2) + '。'));
+    designResultEl.appendChild(el('p', null, '假设 ' + pair.first + '：' + hypothesisBrief(h1)));
+    designResultEl.appendChild(el('p', null, '假设 ' + pair.second + '：' + hypothesisBrief(h2)));
+    designResultEl.appendChild(el('p', null,
+      '逐项片段证据（两种假设在每项候选实验下的预测片段多重集均相同）：'));
+
+    var table = el('table', 'evidence');
+    var head = el('tr');
+    ['候选实验', '假设 ' + pair.first + ' 预测片段', '假设 ' + pair.second + ' 预测片段', '是否相同'].forEach(function (h) {
+      head.appendChild(el('th', null, h));
+    });
+    table.appendChild(head);
+    pair.evidence.forEach(function (ev) {
+      var tr = el('tr');
+      tr.appendChild(el('td', null, ev.label));
+      tr.appendChild(el('td', null, ev.first.join(', ')));
+      tr.appendChild(el('td', null, ev.second.join(', ')));
+      tr.appendChild(el('td', ev.equal ? 'same' : 'diff', ev.equal ? '相同' : '不同'));
+      table.appendChild(tr);
+    });
+    designResultEl.appendChild(table);
+    designResultEl.appendChild(el('p', 'hint',
+      '请修改原消化数据或调整候选验证酶的切点；修改后旧方案将立即清除。'));
+  }
+
+  function renderPredictionTable(sel, res) {
+    var box = el('div', 'map');
+    box.appendChild(el('h2', null, '实验：' + sel.label));
+    var table = el('table', 'cuts');
+    var head = el('tr');
+    ['定向假设', '预测片段多重集（长度升序）'].forEach(function (h) {
+      head.appendChild(el('th', null, h));
+    });
+    table.appendChild(head);
+    res.predictions[sel.key].byHypothesis.forEach(function (frags, i) {
+      var tr = el('tr');
+      tr.appendChild(el('td', null, res.hypotheses[i].id));
+      tr.appendChild(el('td', null, frags.join(', ')));
+      table.appendChild(tr);
+    });
+    box.appendChild(table);
+    return box;
+  }
+
+  clearDesign();
 })();

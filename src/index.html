@@ -47,6 +47,33 @@
   <section id="result" class="result empty" aria-label="复原结果">
     <p class="hint">填写三组片段后点击“复原图谱”。</p>
   </section>
+
+  <section class="panel" id="probePanel" aria-label="鉴别实验设计">
+    <h2 class="panel-title">鉴别实验设计</h2>
+    <p class="lead small">
+      复原得到多个非反向等价图谱后，可录入 2–5 种候选验证酶及其从已标记左端量取的
+      内部切点坐标（正整数，逗号或空格分隔），发起“设计鉴别实验”。应用会完整枚举预算内
+      全部非反向图谱，把每个等价类展开为正向 / 反向两种定向假设，并为每种候选酶计算其与
+      酶A、酶B双酶切的预测片段多重集，选出数量最少的一组实验区分任意一对定向假设。
+      修改原消化数据或候选验证酶后，旧方案会立即清除。
+    </p>
+    <div id="probeRows" class="probe-rows"></div>
+    <div class="actions">
+      <button id="design" type="button">设计鉴别实验</button>
+      <button type="button" class="link" id="addProbe">添加候选验证酶</button>
+      <button type="button" class="link" id="removeProbe">删除最后一种</button>
+      <span class="examples">
+        探针示例：
+        <button type="button" class="link" data-probe-example="distinguishable">可鉴别</button>
+        <button type="button" class="link" data-probe-example="indistinguishable">不可鉴别</button>
+      </span>
+    </div>
+  </section>
+
+  <p id="designStatus" class="status" role="status" aria-live="polite"></p>
+  <section id="designResult" class="result empty" aria-label="鉴别实验方案">
+    <p class="hint">仅在复原结论为“存在多个非反向等价图谱”后可发起；未发起时原输入、结论与见证保持不变。</p>
+  </section>
 </main>
 <script src="solver.js"></script>
 <script src="app.js"></script>
