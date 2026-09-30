@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>限制性内切酶图谱复原</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<main id="app">
+  <h1>限制性内切酶图谱复原</h1>
+  <p class="lead">
+    录入线性质粒构建体的总长度与三组酶切片段（正整数，逗号或空格分隔），
+    点击复原后在浏览器内联合枚举双酶切片段的去重排列与内部切点归属，
+    复原同一条构建体的切点顺序。整体反向视为同一图谱；修改任一输入将清除旧结论。
+  </p>
+
+  <section class="panel" aria-label="输入">
+    <div class="field">
+      <label for="total">总长度</label>
+      <input id="total" type="number" min="1" step="1" placeholder="例如 8">
+    </div>
+    <div class="field">
+      <label for="fragA">酶A 单酶切片段</label>
+      <input id="fragA" type="text" placeholder="例如 1, 2, 5" autocomplete="off">
+    </div>
+    <div class="field">
+      <label for="fragB">酶B 单酶切片段</label>
+      <input id="fragB" type="text" placeholder="例如 3, 5" autocomplete="off">
+    </div>
+    <div class="field">
+      <label for="fragD">双酶切片段</label>
+      <input id="fragD" type="text" placeholder="例如 1, 2, 2, 3" autocomplete="off">
+    </div>
+    <div class="actions">
+      <button id="solve" type="button">复原图谱</button>
+      <span class="examples">
+        示例：
+        <button type="button" class="link" data-example="unique">唯一解</button>
+        <button type="button" class="link" data-example="multiple">多解见证</button>
+        <button type="button" class="link" data-example="infeasible">无可行图谱</button>
+      </span>
+    </div>
+  </section>
+
+  <p id="status" class="status" role="status" aria-live="polite"></p>
+  <section id="result" class="result empty" aria-label="复原结果">
+    <p class="hint">填写三组片段后点击“复原图谱”。</p>
+  </section>
+</main>
+<script src="solver.js"></script>
+<script src="app.js"></script>
+</body>
+</html>

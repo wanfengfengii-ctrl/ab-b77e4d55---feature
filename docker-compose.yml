@@ -1,0 +1,27 @@
+name: digest-mapper
+
+services:
+  web:
+    build:
+      context: .
+      target: web
+    image: digest-mapper-web
+    ports:
+      - "${WEB_PORT:-8080}:80"
+    healthcheck:
+      test: ["CMD", "wget", "-q", "-O", "/dev/null", "http://127.0.0.1/healthz"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+      start_period: 5s
+
+  verify:
+    build:
+      context: .
+      target: verify
+    image: digest-mapper-verify
+    depends_on:
+      web:
+        condition: service_healthy
+    environment:
+      WEB_URL: http://web:80

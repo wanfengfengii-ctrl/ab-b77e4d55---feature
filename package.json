@@ -1,0 +1,11 @@
+{
+  "name": "digest-mapper",
+  "version": "1.0.0",
+  "private": true,
+  "description": "限制性内切酶图谱复原：静态前端 + Docker 交付",
+  "scripts": {
+    "test": "node --test",
+    "build": "node scripts/build.js",
+    "verify:business": "node verify/business.js"
+  }
+}
